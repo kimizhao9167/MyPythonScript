@@ -1,46 +1,54 @@
 # input the intersect file from bedtools intersect
-# output the location of tags, relatively to the length of transcript
-
+# and the transcript annotation in GTF file
+# output the relative location of 5' read end
+import re
 import sys
+import shelve
+import class_GTF
+from class_GTF import Transcript
+from class_GTF import getinfo
 
-# a transcript class to store the info, including 
-# transcript id, gene id, strand,exon count,exon id,exon loc
-def Transcript:
-	def __init__(self,TransID,GeneID,GeneType,Strand):
-		self.TransID = TransID
-		self.GeneID = GeneID
-		self.GeneType = GeneType
-		self.Strand = Strand
-		self.ExonCount = 0
-		self.Exons={}
+# input the annotation file
+TransDB = shelve.open(sys.argv[3])
+GTF = open(sys.argv[1],'r')
+for line in GTF:
+	m = re.match('^#',line)
+	if m is None: # Not a comment line
+		if line.split('\t')[2]=='transcript':
+		# A line for transcript, init
+			InfoString = line.split('\t')[8]	
+			TransID = getinfo(InfoString,'transcript_id')
+			GeneID = getinfo(InfoString,'gene_id')
+			GeneType = getinfo(InfoString,'gene_biotype')
+			Chromosome = str(line.split('\t')[0])
+			Strand = line.split('\t')[6]
+			trans = Transcript(TransID,GeneID,GeneType,Chromosome,Strand)
+			TransDB[TransID] = trans
+		if line.split('\t')[2]=='exon':
+		# A line for exon, attach it to corresponding transcript
+			InfoString = line.split('\t')[8]	
+			TransID = getinfo(InfoString,'transcript_id')
+			ExonID = getinfo(InfoString,'exon_id')
+			ExonNumber = int(getinfo(InfoString,'exon_number'))
+			ExonStart = int(line.split('\t')[3])
+			ExonEnd = int(line.split('\t')[4])
+			trans = TransDB[TransID]
+			trans.myexon(ExonID,ExonStart,ExonEnd,ExonNumber)
+			TransDB[TransID] = trans
 
-	def myexon(self,ExonID,ExonStart,ExonEnd,ExonCount):
-		self.Exons[ExonID]=[ExonStart,ExonEnd]
-		self.ExonCount += 1
-
-
-# build a dict for transcript-exon relationship
-gtf = open('Homo_sapiens.GRCh38.78.noCHR.gtf','r')
-
-infile = open(sys.argv[1],'r')
-lines = infile.readlines()
-for ix in range(len(lines)):
-	if ix==0:
-		prev = ''
-	else:
-		prev = lines[ix-1].split('\t')[3]
-	if ix==len(lines)-1:
-		nex = ''
-	else:
-		nex = lines[ix+1].split('\t')[3]
-	if lines[ix].split('\t')[3] != prev and lines[ix].split('\t')[3] != nex:
-	# drop intersect to overlapping genes:
-		if(lines[ix].split('\t')[6]=='.'):
-			genetype = 'gene_biotype "intergenic_regions"'
-			geneid = 'NA'
-		else:
-			info = lines[ix].split('\t')[14]
-			genetype = info.split(';')[4]
-			geneid = info.split(';')[0]
-		print(lines[ix].split('\t')[0],lines[ix].split('\t')[1],lines[ix].split('\t')[2],lines[ix].split('\t')[3],lines[ix].split('\t')[5],lines[ix].split('\t')[9],lines[ix].split('\t')[10],geneid,genetype,sep='\t')
-
+# input the intersect file
+InFile = open(sys.argv[2],'r')
+Interc = InFile.readlines()
+for ix in range(len(Interc)):
+	prev = '' if ix==0 else Interc[ix-1].split('\t')[3]
+	nex = '' if ix==len(Interc)-1 else Interc[ix+1].split('\t')[3]
+	if Interc[ix].split('\t')[6]!='.' and Interc[ix].split('\t')[3]!=prev and Interc[ix].split('\t')[3]!=nex:
+	# keep only uniq intersection reads
+		InfoString = Interc[ix].split('\t')[14]
+		TransID = getinfo(InfoString,'transcript_id')
+		ExonID = getinfo(InfoString,'exon_id')
+		trans = TransDB[TransID]
+		pos = int(Interc[ix].split('\t')[2])
+		RelativeLoc = trans.getrelativeloc(pos)
+		print(Interc[ix].split('\t')[3],TransID,RelativeLoc,sep='\t')
+TransDB.close()

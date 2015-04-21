@@ -26,5 +26,5 @@ for each in file:
 		sign = '-'
 
 	if loc!=-1:
-		print(each.split()[2],loc,loc,each.split()[0],'0',sign,sep='\t')
+		print(each.split()[2],int(loc)-1,loc,each.split()[0],'0',sign,sep='\t')
 	
