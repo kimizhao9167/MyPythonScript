@@ -3,13 +3,13 @@
 # a transcript class to store the info, including 
 # transcript id, gene id, strand,exon count,exon id,exon loc
 class Transcript:
-	def __init__(self,TransID,GeneID,GeneType,Chromesome,Strand):
+	def __init__(self,TransID,GeneID,GeneType,Chromosome,Strand):
 	# init when encount a line with feature name 'transcript'
 	# input info from this line
 		self.TransID = TransID
 		self.GeneID = GeneID
 		self.GeneType = GeneType
-	#	self.Chromosome = Chromosome
+		self.Chromosome = Chromosome 
 		self.Strand = Strand
 		self.ExonCount = 0
 		self.Exons = {}
@@ -46,6 +46,21 @@ class Transcript:
 					break
 		return(loc/self.getlength())	
 
+	def updownloc(self,pos,upstream,downstream):
+		# input the position, output the position of upstream nt and downstreamm nt
+		coordinate = []
+		# a list to store all the coordinate
+		if self.Strand=='+':
+			for ix in range(self.ExonCount):
+				coordinate.extend(range(self.Exons[ix][1],self.Exons[ix][2]+1))
+		else:
+			for ix in range(self.ExonCount):
+				coordinate.extend(range(self.Exons[ix][1],self.Exons[ix][2]+1)[::-1])
+		loci = coordinate.index(pos)
+		upi = loci-upstream if loci-upstream>=0 else 0
+		downi = loci+downstream if loci+downstream<=len(coordinate) else len(coordinate) 
+		return(coordinate[upi:(downi+1)])
+			
 
 # define a getinfo function for a string
 # input a string and wanted field
@@ -95,15 +110,17 @@ if __name__=='__main__':
 
 	TransDB = shelve.open('class_GTF_shelve')
 	t = TransDB['ENST00000456328']
-	#print(t.TransID,t.GeneID,t.GeneType,t.Chromosome,t.Strand,sep='\t')
+	print(t.TransID,t.GeneID,t.GeneType,t.Chromosome,t.Strand,sep='\t')
 	for ix in range(t.ExonCount):
 		print(ix,'=>',t.Exons[ix],sep='\t')
 	print(t.getlength())
 	print(t.getrelativeloc(12000))
+	print(t.updownloc(12720,10,10))
 	t = TransDB['ENST00000341832']
-	#print(t.TransID,t.GeneID,t.GeneType,t.Chromosome,t.Strand,sep='\t')
+	print(t.TransID,t.GeneID,t.GeneType,t.Chromosome,t.Strand,sep='\t')
 	for ix in range(t.ExonCount):
 		print(ix,'=>',t.Exons[ix],sep='\t')
 	print(t.getlength())
 	print(t.getrelativeloc(1655368))
+	print(t.updownloc(1658915,10,10))
 	TransDB.close()

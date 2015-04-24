@@ -1,6 +1,5 @@
 # input the intersect file from bedtools intersect
-# and the transcript annotation in GTF file
-# output the relative location of 5' read end
+# output the bed file for up- and down-stream sequences 
 import re
 import sys
 import shelve
@@ -37,6 +36,8 @@ for line in GTF:
 			TransDB[TransID] = trans
 
 # input the intersect file
+upstream = 12
+downstream = 12
 InFile = open(sys.argv[2],'r')
 Interc = InFile.readlines()
 for ix in range(len(Interc)):
@@ -49,6 +50,7 @@ for ix in range(len(Interc)):
 		ExonID = getinfo(InfoString,'exon_id')
 		trans = TransDB[TransID]
 		pos = int(Interc[ix].split('\t')[2])
-		RelativeLoc = trans.getrelativeloc(pos)
-		print(Interc[ix].split('\t')[3],TransID,RelativeLoc,sep='\t')
+		updown = trans.updownloc(pos,upstream,downstream)
+		for each in updown:
+			print(trans.Chromosome,each-1,each,Interc[ix].split('\t')[3],'0',trans.Strand,sep='\t')
 TransDB.close()
