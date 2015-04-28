@@ -1,7 +1,8 @@
 # construct the input file for RNAduplex
 import sys
 import re
-let7a = 'UGAGGUAGUAGGUUGUGUGGUU'
+#let7a = 'AGTGATGGGGGTTTATTATTAG'
+let7a = 'GGGTGTAGATTTTAGTTGGGGT'
 let7a = let7a.replace('U','T')
 InFile = open(sys.argv[1],'r')
 lines = InFile.readlines()
@@ -11,4 +12,4 @@ for ix in range(len(lines)):
 		name = lines[ix].replace('\n','')
 	else:
 		seq = lines[ix].replace('\n','')
-		print(name + '_'+ seq,seq,'>let7b'+'_'+let7a,let7a,sep='\n')
+		print(name + '_'+ seq,seq,'>slet7b'+'_'+let7a,let7a,sep='\n')
